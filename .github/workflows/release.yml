@@ -45,7 +45,7 @@ jobs:
         id: changelog
         uses: TriPSs/conventional-changelog-action@v3
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GH_TOKEN }}
           version-file: "./package.json,./pnpm-lock.yaml"
           git-branch: "temporary-release"
           skip-git-pull: true
@@ -57,7 +57,7 @@ jobs:
         id: create-pr
         run: gh pr create --base main --head temporary-release --title 'Merge new release into main' --body 'Created by Github action\nThis pull request was created to merge a new release into the main release'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       # Merge PR using GitHub CLI
       - name: merge PR with release info
@@ -65,14 +65,14 @@ jobs:
         id: merge-pr
         run: gh pr merge --admin --merge --subject 'Merge release info'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       # Release info is now in main so we can continue as before
       - name: create release with last commit
         if: steps.changelog.outputs.skipped == 'false'
         uses: ncipollo/release-action@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub token here
+          token: ${{ secrets.GH_TOKEN }}
           tag: v${{ steps.package-version.outputs.current-version }}
           name: v${{ steps.package-version.outputs.current-version }}
           body: ${{ steps.changelog.outputs.clean_changelog }}

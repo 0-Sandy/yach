@@ -14,7 +14,6 @@ permissions:
   contents: write
   pull-requests: write
   actions: write
-  repository: write
 
 
 jobs:

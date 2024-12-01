@@ -39,8 +39,6 @@ jobs:
       - name: update app config
         run: |
           sed -i 's/"version": "[^"]*"/"version": "${{ steps.package-version.outputs.current-version }}"/g' package.json
-          sed -i 's/"version": "[^"]*"/"version": "${{ steps.package-version.outputs.current-version }}"/g' apps/api/package.json
-          sed -i 's/"version": "[^"]*"/"version": "${{ steps.package-version.outputs.current-version }}"/g' apps/client/package.json
 
       # Create release info and push it upstream
       - name: conventional Changelog Action
@@ -51,7 +49,7 @@ jobs:
           version-file: "./package.json,./pnpm-lock.yaml"
           git-branch: "temporary-release"
           skip-git-pull: true
-          git-user-name: "Montevideo Move Bot"
+          git-user-name: "YACH Bot"
 
       # Create PR using GitHub CLI
       - name: create PR with release info

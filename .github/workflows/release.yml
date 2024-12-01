@@ -45,13 +45,23 @@ jobs:
         run: |
           sed -i 's/"version": "[^"]*"/"version": "${{ steps.package-version.outputs.current-version }}"/g' package.json
 
+      # Check if tag exists and skip tag creation if necessary
+      - name: Check if tag exists
+        run: |
+          git fetch --tags
+          if git rev-parse "v${{ steps.package-version.outputs.current-version }}" >/dev/null 2>&1; then
+            echo "Tag v${{ steps.package-version.outputs.current-version }} already exists, skipping tag creation."
+          else
+            git tag -a v${{ steps.package-version.outputs.current-version }} -m "v${{ steps.package-version.outputs.current-version }}"
+          fi
+
       # Create release info and push it upstream
       - name: conventional Changelog Action
         id: changelog
         uses: TriPSs/conventional-changelog-action@v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          version-file: "./package.json,./pnpm-lock.yaml"
+          version-file: "./package.json"
           git-branch: "temporary-release"
           skip-git-pull: true
           git-user-name: "YACH Bot"
@@ -77,7 +87,7 @@ jobs:
         if: steps.changelog.outputs.skipped == 'false'
         uses: ncipollo/release-action@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub token here
+          token: ${{ secrets.GITHUB_TOKEN }}
           tag: v${{ steps.package-version.outputs.current-version }}
           name: v${{ steps.package-version.outputs.current-version }}
           body: ${{ steps.changelog.outputs.clean_changelog }}

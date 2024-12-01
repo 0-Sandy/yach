@@ -1,109 +1,26 @@
-name: Release new version
+name: Releases
 on:
   push:
     branches:
       - main
-      - master
-
-concurrency:
-  group: "main-branch"
-
-permissions:
-  contents: write
-  pull-requests: write
-  actions: write
 
 jobs:
   changelog:
     runs-on: ubuntu-latest
-
     steps:
-      # Check out the repository with all releases
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Node.js and pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 7
-
-      # Create a temporary, uniquely named branch to push release info to
-      - name: create temporary branch
-        run: git branch "temporary-release" "${{ github.sha }}"
-
-      # Switch to the temporary branch
-      - name: switch to new branch
-        run: git checkout temporary-release
-
-      # Configure git user identity
-      - name: Set up Git config
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-
-      # Get current npm version from package.json
-      - name: get-npm-version
-        id: package-version
-        run: |
-          LF_VERSION=$(cat package.json | jq -r '.version')
-          echo "current-version=$LF_VERSION" >> "$GITHUB_OUTPUT"
-
-      # Update app config with the new version
-      - name: update app config
-        run: |
-          sed -i 's/"version": "[^"]*"/"version": "${{ steps.package-version.outputs.current-version }}"/g' package.json
-
-      # Check if tag exists and skip tag creation if necessary
-      - name: Check if tag exists
-        run: |
-          git fetch --tags
-          if git rev-parse "v${{ steps.package-version.outputs.current-version }}" >/dev/null 2>&1; then
-            echo "Tag v${{ steps.package-version.outputs.current-version }} already exists, skipping tag creation."
-          else
-            git tag -a v${{ steps.package-version.outputs.current-version }} -m "v${{ steps.package-version.outputs.current-version }}"
-          fi
-
-      # Create release info and push it upstream
-      - name: conventional Changelog Action
+      - uses: actions/checkout@v2
+      - name: Conventional Changelog Action
         id: changelog
-        uses: TriPSs/conventional-changelog-action@v3
+        uses: TriPSs/conventional-changelog-action@v3.7.1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          version-file: "./package.json,./pnpm-lock.yaml"
-          git-branch: "temporary-release"
-          skip-git-pull: true
-          git-user-name: "YACH Bot"
-
-      # Create PR using GitHub CLI
-      - name: create PR with release info
-        if: steps.changelog.outputs.skipped == 'false'
-        id: create-pr
-        run: gh pr create --base main --head temporary-release --title 'Merge new release into main' --body 'Created by Github action\nThis pull request was created to merge a new release into the main release'
+          github-token: ${{ secrets.PA_TOKEN }}
+          version-file: './package.json,./package-lock.json'
+      - name: create release
+        uses: actions/create-release@v1
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Merge PR using GitHub CLI
-      - name: merge PR with release info
-        if: steps.changelog.outputs.skipped == 'false'
-        id: merge-pr
-        run: gh pr merge --admin --merge --subject 'Merge release info'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Release info is now in main so we can continue as before
-      - name: create release with last commit
-        if: steps.changelog.outputs.skipped == 'false'
-        uses: ncipollo/release-action@v1
+          GITHUB_TOKEN: ${{ secrets.PA_TOKEN }}
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag: v${{ steps.package-version.outputs.current-version }}
-          name: v${{ steps.package-version.outputs.current-version }}
+          tag_name: ${{ steps.changelog.outputs.tag }}
+          release_name: ${{ steps.changelog.outputs.tag }}
           body: ${{ steps.changelog.outputs.clean_changelog }}
-
-      # Publish the package to npm
-      - name: Publish to npm
-        if: steps.package-version.outputs.current-version != ''
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-          pnpm publish --access public --no-git-checks

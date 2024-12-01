@@ -2,3 +2,8 @@
 
 commit-helper-settings.json
 .DS_Store
+.env
+web/.env
+web/dist/
+web/.astro/
+web/node_modules/

@@ -4,8 +4,6 @@ on:
     branches:
       - main
       - master
-    # paths-ignore:
-    #   - "data/**"
 
 concurrency:
   group: "main-branch"
@@ -32,6 +30,12 @@ jobs:
       # Switch to the temporary branch
       - name: switch to new branch
         run: git checkout temporary-release
+
+      # Configure git user identity
+      - name: Set up Git config
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
 
       # Get current npm version from package.json
       - name: get-npm-version
@@ -61,7 +65,7 @@ jobs:
         uses: TriPSs/conventional-changelog-action@v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          version-file: "./package.json"
+          version-file: "./package.json,./pnpm-lock.yaml"
           git-branch: "temporary-release"
           skip-git-pull: true
           git-user-name: "YACH Bot"

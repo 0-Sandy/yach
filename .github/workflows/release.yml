@@ -106,4 +106,4 @@ jobs:
         if: steps.package-version.outputs.current-version != ''
         run: |
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-          pnpm publish --access public
+          pnpm publish --access public --no-git-checks

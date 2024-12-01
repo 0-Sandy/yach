@@ -23,6 +23,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Node.js and pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 7
+
       # Create a temporary, uniquely named branch to push release info to
       - name: create temporary branch
         run: git branch "temporary-release" "${{ github.sha }}"

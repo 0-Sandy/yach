@@ -1,0 +1,11 @@
+{
+  "name": "yach",
+  "version": "0.0.1",
+  "description": "Yet another commit helper",
+  "main": "commit-helper.js",
+  "scripts": {
+    "commit": "node ."
+  },
+  "author": "Sandy00",
+  "license": "GPL-3.0"
+}

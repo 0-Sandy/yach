@@ -1,0 +1,62 @@
+name: Release new version
+on:
+  push:
+    branches:
+      - main
+      - master
+
+concurrency:
+  group: "main-branch"
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Setup pnpm in the GitHub Actions environment
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8 # Specify the pnpm version you use
+
+      # Checkout the repository with full history
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Install dependencies using pnpm
+      - name: Install dependencies
+        run: pnpm install
+
+      # Generate a new version using standard-version
+      - name: Generate new version
+        id: version
+        run: |
+          pnpm standard-version --dry-run > version.log
+          NEW_VERSION=$(grep 'tagging release' version.log | awk '{print $3}')
+          echo "new-version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      # Apply the new version to package.json and changelog
+      - name: Apply new version
+        run: pnpm standard-version
+
+      # Push changes and tags to the remote repository
+      - name: Push changes
+        run: |
+          git push --follow-tags origin main
+
+      # Create a release in GitHub using the new version
+      - name: Create GitHub release
+        uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: v${{ steps.version.outputs.new-version }}
+          name: v${{ steps.version.outputs.new-version }}
+          body: ${{ steps.changelog.outputs.clean_changelog }}
+
+      # Publish the package to npm
+      - name: Publish to npm
+        if: steps.version.outputs.new-version != ''
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          pnpm publish
